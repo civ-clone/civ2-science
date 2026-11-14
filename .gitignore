@@ -205,4 +205,5 @@ GitHub.sublime-settings
 *.code-workspace
 
 # Local History for Visual Studio Code
-.historypnpm-lock.yaml
+.history
+pnpm-lock.yaml
