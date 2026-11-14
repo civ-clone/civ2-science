@@ -56,45 +56,49 @@ describe('research', (): void => {
     expect(join('computer').complete()).length(0);
   });
 
+  it('offers a person every opening choice, as nothing counts as 1 advance gained', (): void => {
+    const { join } = setUp(),
+      person = join('human');
+
+    // Candidates 1, 8, 9, 36, 47, 65, 86 less 1: none a multiple of 3 after the first.
+    expect(person.available()).length(7);
+  });
+
   it('hides every third choice from a person, but not from the computer players or on Chieftain', (): void => {
     const { join } = setUp(),
       person = join('human'),
-      computer = join('computer');
+      computer = join('computer'),
+      chieftain = setUp(Chieftain).join('human');
 
+    give(person, Advances.Alphabet);
+    give(computer, Advances.Alphabet);
+    give(chieftain, Advances.Alphabet);
+
+    // 2 counted: candidates 8, 9, 12, 36, 46, 47, 65, 86, 88; 47, 65 and 86 less 2 are multiples of 3.
     // The registry's (reversed) order, so compare members.
     expect(person.available()).members([
-      Advances.Alphabet,
-      Advances.BronzeWorking,
-      Advances.Masonry,
-      Advances.Pottery,
-      Advances.WarriorCode,
-    ]);
-    expect(computer.available()).members([
-      Advances.Alphabet,
       Advances.BronzeWorking,
       Advances.CeremonialBurial,
+      Advances.CodeOfLaws,
       Advances.HorsebackRiding,
-      Advances.Masonry,
-      Advances.Pottery,
-      Advances.WarriorCode,
+      Advances.MapMaking,
+      Advances.Writing,
     ]);
-
-    const chieftain = setUp(Chieftain).join('human');
-
-    expect(chieftain.available()).length(7);
+    expect(computer.available()).length(9);
+    expect(chieftain.available()).length(9);
   });
 
   it('moves the hidden choices as the player gains advances', (): void => {
     const { join } = setUp(),
       person = join('human');
 
-    give(person, Advances.Alphabet);
+    give(person, Advances.Alphabet, Advances.BronzeWorking);
 
-    // Candidates 8, 9, 12, 36, 46, 47, 65, 86, 88; with 1 advance gained, 46 and 88 are hidden.
-    expect(person.available()).not.include(Advances.MapMaking);
-    expect(person.available()).not.include(Advances.Writing);
+    // 3 counted: candidates 9, 12, 20, 36, 46, 47, 65, 86, 88; 12 and 36 less 3 are multiples of 3 (9 is first).
+    expect(person.available()).not.include(Advances.CodeOfLaws);
+    expect(person.available()).not.include(Advances.HorsebackRiding);
     expect(person.available()).include(Advances.CeremonialBurial);
-    expect(person.available()).include(Advances.CodeOfLaws);
+    expect(person.available()).include(Advances.Currency);
     expect(person.available()).length(7);
   });
 
@@ -167,7 +171,8 @@ describe('research', (): void => {
     person.research(Advances.Alphabet);
     computer.research(Advances.Alphabet);
 
-    // `lib/cost`: 10 for a person's first advance at King, 11 × 67 / 89 = 8 for the computer's.
+    // 1 counted each, and the reference (the person) 1: a person's ratio 12, extra 1 × 9 / 20 = 0, × 67 / 89 = 9,
+    //  raised to 11 − 1 = 10; the computer's 11 × 67 / 89 = 8.
     expect(person.cost().value()).equal(10);
     expect(computer.cost().value()).equal(8);
   });
@@ -191,9 +196,9 @@ describe('research', (): void => {
     );
     game.rules.process(TurnStart, person.player());
 
-    // 5 advances: 12, + 9 × 5 / 20 = 2, 14 × 67 / 89 = 10; × 5.
+    // 5 advances, so 6 counted: 12, + 9 × 6 / 20 = 2, 14 × 67 / 89 = 10; × 6.
     expect(person.researching()).equal(Advances.Pottery);
-    expect(person.cost().value()).equal(50);
+    expect(person.cost().value()).equal(60);
   });
 
   it('carries nothing over when research completes, as Civilization II sets the progress to 0', (): void => {

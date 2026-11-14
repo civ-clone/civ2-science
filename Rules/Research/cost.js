@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRules = exports.mapSizeOf = exports.referenceAdvances = exports.numberOfAdvances = void 0;
+exports.getRules = exports.mapSizeOf = exports.referenceAdvances = exports.numberOfAdvances = exports.STARTING_NUMBER_OF_ADVANCES = void 0;
 const ClientRegistry_1 = require("@civ-clone/core-client/ClientRegistry");
 const GameDifficultyRegistry_1 = require("@civ-clone/core-difficulty/GameDifficultyRegistry");
 const PlayerResearchRegistry_1 = require("@civ-clone/core-science/PlayerResearchRegistry");
@@ -14,12 +14,16 @@ const advanceIndex_1 = require("../../lib/advanceIndex");
 const isHuman_1 = require("@civ-clone/base-difficulty/lib/isHuman");
 const level_1 = require("@civ-clone/civ2-difficulty/level");
 const cost_1 = require("../../lib/cost");
+/** What `num_advances` is for a civilization knowing nothing: see `numberOfAdvances`. */
+exports.STARTING_NUMBER_OF_ADVANCES = 1;
 /**
- * The advances a player has gained, as Civilization II's `num_advances` counts them: every advance completed, each
- * Future Technology included. (Civ2 doesn't count the advances given before the first turn, by the start balancing;
- * these do. See the README.)
+ * Civilization II's `num_advances` for a player: 1 to start with, then 1 more for each advance gained, each Future
+ * Technology included (OpenCiv2 `src/auto/civ.cpp`, richardpenman/civ2@49f26ec: `civ_create_reset_civ` sets it to 0,
+ * then `civ_create_place_units`, as the civilization is placed on the map, to 1, and `civ_give_advance` adds 1 from
+ * the first turn on). Civ2 doesn't count the advances given before the first turn, by the start balancing; these do
+ * (see the README).
  */
-const numberOfAdvances = (playerResearch) => playerResearch.complete().length;
+const numberOfAdvances = (playerResearch) => playerResearch.complete().length + exports.STARTING_NUMBER_OF_ADVANCES;
 exports.numberOfAdvances = numberOfAdvances;
 /**
  * The reference count the research cost compares with: the most advances any person's player has, 0 with no person

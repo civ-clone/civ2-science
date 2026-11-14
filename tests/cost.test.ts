@@ -60,16 +60,10 @@ describe('researchCost', (): void => {
         mapSize: 'small',
       })
     ).equal(90);
-    // Not before turn 151: 13, + 4 = 17, × 67 / 89 = 12, small 9.
-    expect(
-      cost({
-        level: 5,
-        advances: 10,
-        reference: 20,
-        turn: 150,
-        mapSize: 'small',
-      })
-    ).equal(90);
+    // Where the step survives the scaling: 4 advances, 5 behind. Turn 151: 14 − 1 − 1 = 12, + 4 × 9 / 20 = 1, × 67 / 89
+    //  = 9 (floor 7); × 4. Turn 150: 13, + 1, × 67 / 89 = 10; × 4.
+    expect(cost({ level: 5, advances: 4, reference: 9, turn: 151 })).equal(36);
+    expect(cost({ level: 5, advances: 4, reference: 9, turn: 150 })).equal(40);
     // On Chieftain, no step down for being behind: 6, + 2 = 8, × 67 / 89 = 6 (floor 1); × 10.
     expect(cost({ level: 0, advances: 10, reference: 20 })).equal(60);
   });

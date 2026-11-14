@@ -11,8 +11,10 @@ under `civ2-science:` ids, with Civ2's numbers from OpenCiv2's reconstruction of
 - **Prerequisites:** from `data/advances`. Future Technology needs Fusion Power and Recycling, and can be researched
   again and again. Plumbing is registered but never available.
 - **Start:** every civilization starts knowing nothing. `civ2-player`'s start balancing gives poorer starts advances.
+- **Advances counted:** Civ2's `num_advances` starts at 1 (set as the civilization is placed) and rises by 1 for each
+  advance gained, Future Technologies included. The cost and the hidden choice both use it.
 - **Choosing:** a player researching nothing must choose. A person is never offered every third candidate (index less
-  advances gained, a multiple of 3), except the lowest and except on Chieftain. Computer players see every one.
+  advances counted, a multiple of 3), except the lowest and except on Chieftain. Computer players see every one.
   `lib/pickResearch` is the game's own pick (`civ_pick_research_advance`).
 - **Cost:** `lib/cost`, Civ2's `civ_research_cost`, worked out again at each turn's start. Completing research
   carries nothing over: progress goes back to 0.

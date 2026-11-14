@@ -30,13 +30,18 @@ import isHuman from '@civ-clone/base-difficulty/lib/isHuman';
 import { levelOf } from '@civ-clone/civ2-difficulty/level';
 import researchCost from '../../lib/cost';
 
+/** What `num_advances` is for a civilization knowing nothing: see `numberOfAdvances`. */
+export const STARTING_NUMBER_OF_ADVANCES = 1;
+
 /**
- * The advances a player has gained, as Civilization II's `num_advances` counts them: every advance completed, each
- * Future Technology included. (Civ2 doesn't count the advances given before the first turn, by the start balancing;
- * these do. See the README.)
+ * Civilization II's `num_advances` for a player: 1 to start with, then 1 more for each advance gained, each Future
+ * Technology included (OpenCiv2 `src/auto/civ.cpp`, richardpenman/civ2@49f26ec: `civ_create_reset_civ` sets it to 0,
+ * then `civ_create_place_units`, as the civilization is placed on the map, to 1, and `civ_give_advance` adds 1 from
+ * the first turn on). Civ2 doesn't count the advances given before the first turn, by the start balancing; these do
+ * (see the README).
  */
 export const numberOfAdvances = (playerResearch: PlayerResearch): number =>
-  playerResearch.complete().length;
+  playerResearch.complete().length + STARTING_NUMBER_OF_ADVANCES;
 
 /**
  * The reference count the research cost compares with: the most advances any person's player has, 0 with no person
