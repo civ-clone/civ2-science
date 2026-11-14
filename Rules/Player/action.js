@@ -1,0 +1,18 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getRules = void 0;
+const PlayerResearchRegistry_1 = require("@civ-clone/core-science/PlayerResearchRegistry");
+const choose_1 = require("@civ-clone/base-science-research/lib/choose");
+const Action_1 = require("@civ-clone/core-player/Rules/Action");
+const PlayerActions_1 = require("../../PlayerActions");
+const Criterion_1 = require("@civ-clone/core-rule/Criterion");
+const Effect_1 = require("@civ-clone/core-rule/Effect");
+const isBarbarian_1 = require("@civ-clone/base-civilization-barbarian/isBarbarian");
+const getRules = (playerResearchRegistry = PlayerResearchRegistry_1.instance) => [
+    new Action_1.default('civ2-science:player/action/choose-research', 
+    // Barbarians never research.
+    new Criterion_1.default((player) => !(0, isBarbarian_1.default)(player)), new Criterion_1.default((0, choose_1.notResearching)(playerResearchRegistry)), new Criterion_1.default((0, choose_1.canResearch)(playerResearchRegistry)), new Effect_1.default((0, choose_1.chooseResearch)(PlayerActions_1.ChooseResearch, playerResearchRegistry))),
+];
+exports.getRules = getRules;
+exports.default = exports.getRules;
+//# sourceMappingURL=action.js.map
