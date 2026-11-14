@@ -7,6 +7,8 @@ import { ChooseResearch } from '../PlayerActions';
 import Client from '@civ-clone/core-client/Client';
 import { Game } from '@civ-clone/core-game';
 import Player from '@civ-clone/core-player/Player';
+import { Research } from '../Yields';
+import TurnStart from '@civ-clone/core-player/Rules/TurnStart';
 import PlayerResearch from '@civ-clone/core-science/PlayerResearch';
 import { advances } from '../data/advances';
 import { expect } from 'chai';
@@ -168,5 +170,41 @@ describe('research', (): void => {
     // `lib/cost`: 10 for a person's first advance at King, 11 × 67 / 89 = 8 for the computer's.
     expect(person.cost().value()).equal(10);
     expect(computer.cost().value()).equal(8);
+  });
+
+  it('works the cost out again at the start of each turn', (): void => {
+    const { game, join } = setUp(),
+      person = join('human');
+
+    game.turn.increment();
+    person.research(Advances.Pottery);
+
+    expect(person.cost().value()).equal(10);
+
+    give(
+      person,
+      Advances.Alphabet,
+      Advances.BronzeWorking,
+      Advances.CeremonialBurial,
+      Advances.HorsebackRiding,
+      Advances.Masonry
+    );
+    game.rules.process(TurnStart, person.player());
+
+    // 5 advances: 12, + 9 × 5 / 20 = 2, 14 × 67 / 89 = 10; × 5.
+    expect(person.researching()).equal(Advances.Pottery);
+    expect(person.cost().value()).equal(50);
+  });
+
+  it('carries nothing over when research completes, as Civilization II sets the progress to 0', (): void => {
+    const { game, join } = setUp(),
+      person = join('human');
+
+    game.turn.increment();
+    person.research(Advances.Alphabet);
+    person.add(new Research(15));
+
+    expect(person.completed(Advances.Alphabet)).true;
+    expect(person.progress().value()).equal(0);
   });
 });

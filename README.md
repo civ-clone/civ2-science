@@ -14,7 +14,8 @@ under `civ2-science:` ids, with Civ2's numbers from OpenCiv2's reconstruction of
 - **Choosing:** a player researching nothing must choose. A person is never offered every third candidate (index less
   advances gained, a multiple of 3), except the lowest and except on Chieftain. Computer players see every one.
   `lib/pickResearch` is the game's own pick (`civ_pick_research_advance`).
-- **Cost:** `lib/cost`, Civ2's `civ_research_cost`, worked out again at each turn's start.
+- **Cost:** `lib/cost`, Civ2's `civ_research_cost`, worked out again at each turn's start. Completing research
+  carries nothing over: progress goes back to 0.
 - **Research:** a city's research goes to its player, but not under Anarchy or in disorder.
 - **Capture:** taking a city takes one of its owner's advances (never a Future Technology), chosen by the captor's
   client.
