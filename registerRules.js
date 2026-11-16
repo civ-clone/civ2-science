@@ -5,6 +5,7 @@ const requirements_1 = require("./Rules/Research/requirements");
 const action_1 = require("./Rules/Player/action");
 const added_1 = require("./Rules/Player/added");
 const captured_1 = require("./Rules/City/captured");
+const yield_1 = require("./Rules/City/yield");
 const complete_1 = require("./Rules/Research/complete");
 const cost_1 = require("./Rules/Research/cost");
 const process_yield_1 = require("./Rules/City/process-yield");
@@ -17,7 +18,7 @@ const register = (game) => {
     // Which advances a player can research, from the entries in `Requirements`, so a plugin can change an entry and its
     //  rule together.
     game.requirements.add(requirements_1.deriveRequirementsRules, ...Requirements_1.default);
-    game.rules.register((0, requirements_1.plumbing)(), (0, requirements_1.hiddenChoice)(game.playerResearch, game.clients, game.difficulty), ...(0, started_1.default)(game.engine), ...(0, turn_start_1.default)(game.playerResearch, game.rules));
+    game.rules.register((0, requirements_1.plumbing)(), (0, requirements_1.hiddenChoice)(game.playerResearch, game.clients, game.difficulty), ...(0, started_1.default)(game.engine), ...(0, turn_start_1.default)(game.playerResearch, game.rules), ...(0, yield_1.default)(game.playerGovernments, game.clients));
 };
 exports.register = register;
 // The plugin loader imports each package for this side effect. Until it passes

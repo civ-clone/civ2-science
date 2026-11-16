@@ -6,6 +6,7 @@ import {
 import action from './Rules/Player/action';
 import added from './Rules/Player/added';
 import captured from './Rules/City/captured';
+import cityYield from './Rules/City/yield';
 import complete from './Rules/Research/complete';
 import cost from './Rules/Research/cost';
 import processYield from './Rules/City/process-yield';
@@ -38,7 +39,8 @@ export const register = (game: Game): void => {
     plumbing(),
     hiddenChoice(game.playerResearch, game.clients, game.difficulty),
     ...started(game.engine),
-    ...turnStart(game.playerResearch, game.rules)
+    ...turnStart(game.playerResearch, game.rules),
+    ...cityYield(game.playerGovernments, game.clients)
   );
 };
 
