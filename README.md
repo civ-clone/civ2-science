@@ -21,6 +21,13 @@ under `civ2-science:` ids, with Civ2's numbers from OpenCiv2's reconstruction of
 - **Research:** a city's research goes to its player, but not under Anarchy or in disorder.
 - **Capture:** taking a city takes one of its owner's advances (never a Future Technology), chosen by the captor's
   client.
+- **Fundamentalism** (`city_split_trade`):
+  - no more than half the trade goes to research (COSMIC's 5 tenths), persons and computer players alike: a `MaxRate`
+    on the research rate, so the excess goes to tax as civ2-trade-rate sends it. The original uses the lower rate only
+    in the split, and leaves the slider where it was;
+  - a computer player's cities turn the luxuries the split gave them into science, before the specialists' yields;
+  - a city loses half its science (COSMIC's 50%, rounded down), Scientists' included, before the Library, University
+    and Research Lab add their share.
 
 ## Not here yet
 
@@ -32,5 +39,5 @@ under `civ2-science:` ids, with Civ2's numbers from OpenCiv2's reconstruction of
 - **Disorder:** OpenCiv2 shows no zeroing of a disordered city's science (survey Q33). This keeps Civilization's rule.
 - **`advanceValue`** has only the terms that need the advances. The unit terms (expansion by sea), the tribes'
   preferences and the city, wonder and human-lead terms come with the packages they need.
-- **Not yet:** Fundamentalism's science cap and loss, the Great Library, Philosophy, Darwin's Voyage, Barracks sold
-  on Gunpowder, the Chieftain and space-race doubling of science, and the hidden choice in scenarios.
+- **Not yet:** Philosophy, the Chieftain and space-race doubling of science, and the hidden choice in scenarios. The
+  Great Library and Darwin's Voyage are civ2-wonder's, and Barracks sold on Gunpowder civ2-city-improvement's.
