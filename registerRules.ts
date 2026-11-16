@@ -9,7 +9,6 @@ import captured from './Rules/City/captured';
 import cityYield from './Rules/City/yield';
 import complete from './Rules/Research/complete';
 import cost from './Rules/Research/cost';
-import maxRate from './Rules/Player/max-rate';
 import processYield from './Rules/City/process-yield';
 import requiresAdvances from './Requirements';
 import started from './Rules/Research/started';
@@ -41,7 +40,6 @@ export const register = (game: Game): void => {
     hiddenChoice(game.playerResearch, game.clients, game.difficulty),
     ...started(game.engine),
     ...turnStart(game.playerResearch, game.rules),
-    ...maxRate(game.playerGovernments),
     ...cityYield(game.playerGovernments, game.clients)
   );
 };

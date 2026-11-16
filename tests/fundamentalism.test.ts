@@ -1,12 +1,15 @@
+import { Entertainer, Scientist } from '@civ-clone/civ2-city/Specialists';
 import { describe, it } from 'mocha';
 import AIClient from '@civ-clone/core-ai-client/AIClient';
+import AvailableGovernmentRegistry from '@civ-clone/core-government/AvailableGovernmentRegistry';
+import AvailableTradeRateRegistry from '@civ-clone/core-trade-rate/AvailableTradeRateRegistry';
 import City from '@civ-clone/core-city/City';
 import Client from '@civ-clone/core-client/Client';
 import ClientRegistry from '@civ-clone/core-client/ClientRegistry';
 import Criterion from '@civ-clone/core-rule/Criterion';
+import Democracy from '@civ-clone/base-government-democracy/Democracy';
 import Despotism from '@civ-clone/base-government-despotism/Despotism';
 import Effect from '@civ-clone/core-rule/Effect';
-import ExcessRate from '@civ-clone/core-trade-rate/Rules/ExcessRate';
 import Fundamentalism from '@civ-clone/base-government-fundamentalism/Fundamentalism';
 import GoldYield from '@civ-clone/base-city-yield-gold/Gold';
 import Government from '@civ-clone/core-government/Government';
@@ -17,248 +20,261 @@ import Player from '@civ-clone/core-player/Player';
 import PlayerGovernment from '@civ-clone/core-government/PlayerGovernment';
 import PlayerGovernmentRegistry from '@civ-clone/core-government/PlayerGovernmentRegistry';
 import PlayerTradeRates from '@civ-clone/core-trade-rate/PlayerTradeRates';
+import PlayerTradeRatesRegistry from '@civ-clone/core-trade-rate/PlayerTradeRatesRegistry';
+import Republic from '@civ-clone/base-government-republic/Republic';
 import { Research } from '../Yields';
 import ResearchRate from '@civ-clone/base-trade-rate-research/Research';
 import RuleRegistry from '@civ-clone/core-rule/RuleRegistry';
+import Specialist from '@civ-clone/core-city/Specialist';
+import SpecialistRegistry from '@civ-clone/core-city/SpecialistRegistry';
 import TaxRate from '@civ-clone/base-trade-rate-tax/Tax';
+import Trade from '@civ-clone/base-terrain-yield-trade/Trade';
 import Yield from '@civ-clone/core-yield/Yield';
 import YieldModifier from '@civ-clone/core-city/Rules/YieldModifier';
 import YieldRule from '@civ-clone/core-city/Rules/Yield';
+import civ2CityYield from '@civ-clone/civ2-city/Rules/City/yield';
+import civ2Split from '@civ-clone/civ2-trade-rate/Rules/City/yield';
 import cityYield from '../Rules/City/yield';
 import { expect } from 'chai';
-import maxRate from '../Rules/Player/max-rate';
+import governmentChanged from '@civ-clone/civ2-trade-rate/Rules/Player/government-changed';
+import maxRate from '@civ-clone/civ2-trade-rate/Rules/Player/max-rate';
 import { reduceYield } from '@civ-clone/core-yield/lib/reduceYields';
 
-type Split = { luxuries: number; research: number; tax: number };
+type Kind = 'person' | 'computer';
 type Specialists = { entertainers?: number; scientists?: number };
 
-const setUp = (
-    kind: 'person' | 'computer',
-    GovernmentType: typeof Government
-  ) => {
-    const ruleRegistry = new RuleRegistry(),
-      playerGovernmentRegistry = new PlayerGovernmentRegistry(),
-      clientRegistry = new ClientRegistry(),
-      player = new Player(ruleRegistry),
-      playerGovernment = new PlayerGovernment(player, undefined, ruleRegistry);
+// A city's yields as `City#yields` works them out, through the real rules in the order a civ2 game registers them:
+//  civ2-city's specialists and civ2-trade-rate's split (both 2000, civ2-city first), this package's Fundamentalism
+//  rules (2050, 2100, 2200), and a Library (civ2-city-improvement's `YieldModifier` adds half the science the yield
+//  rules gave). The player's rates have civ2-trade-rate's maximums.
+const setUp = (kind: Kind, GovernmentType: typeof Government) => {
+  const ruleRegistry = new RuleRegistry(),
+    playerGovernmentRegistry = new PlayerGovernmentRegistry(),
+    playerTradeRatesRegistry = new PlayerTradeRatesRegistry(),
+    availableTradeRateRegistry = new AvailableTradeRateRegistry(),
+    specialistRegistry = new SpecialistRegistry(),
+    clientRegistry = new ClientRegistry(),
+    player = new Player(ruleRegistry),
+    playerGovernment = new PlayerGovernment(
+      player,
+      new AvailableGovernmentRegistry(),
+      ruleRegistry
+    ),
+    city = { player: () => player } as unknown as City;
 
-    clientRegistry.register(
-      kind === 'person' ? new Client(player) : new AIClient(player)
-    );
-    playerGovernment.set(new GovernmentType());
-    playerGovernmentRegistry.register(playerGovernment);
+  availableTradeRateRegistry.register(LuxuriesRate, ResearchRate, TaxRate);
+  clientRegistry.register(
+    kind === 'person' ? new Client(player) : new AIClient(player)
+  );
+  playerGovernmentRegistry.register(playerGovernment);
+  playerTradeRatesRegistry.register(
+    new PlayerTradeRates(
+      player,
+      new LuxuriesRate(0),
+      new ResearchRate(50),
+      new TaxRate(50),
+      ruleRegistry
+    )
+  );
 
-    ruleRegistry.register(
-      ...maxRate(playerGovernmentRegistry),
-      ...cityYield(playerGovernmentRegistry, clientRegistry)
-    );
-
-    return { player, ruleRegistry };
-  },
-  // `City#yields`, for a city whose split and specialists give what's asked, and that has a Library (half the science
-  //  the yield rules gave, as civ2-city-improvement's modifier adds it).
-  yieldsOf = (
-    { player, ruleRegistry }: ReturnType<typeof setUp>,
-    { luxuries, research, tax }: Split,
-    { entertainers = 0, scientists = 0 }: Specialists = {}
-  ): Yield[] => {
-    const city = { player: () => player } as unknown as City,
-      rules = new RuleRegistry();
-
-    rules.register(
-      ...ruleRegistry.get(YieldRule),
-      // civ2-trade-rate's split, labelled with the rates' names.
-      new YieldRule(
-        'test:split',
-        new Effect((): Yield[] => [
-          new LuxuriesYield(luxuries, LuxuriesRate.name),
-          new Research(research, ResearchRate.name),
-          new GoldYield(tax, TaxRate.name),
-        ])
+  ruleRegistry.register(
+    ...civ2CityYield(
+      undefined,
+      playerGovernmentRegistry,
+      specialistRegistry,
+      undefined,
+      clientRegistry
+    ).filter((rule) =>
+      (rule.id() ?? '').startsWith('civ2-city:city/yield/specialist/')
+    ),
+    ...civ2Split(availableTradeRateRegistry, playerTradeRatesRegistry),
+    ...cityYield(playerGovernmentRegistry, clientRegistry),
+    ...maxRate(playerGovernmentRegistry, clientRegistry),
+    ...governmentChanged(playerTradeRatesRegistry),
+    new YieldModifier(
+      'test:library',
+      new Low(),
+      new Criterion(
+        (city: City, yields: Yield[], base: Yield[]): boolean =>
+          reduceYield(base, Research) > 1
       ),
-      // civ2-city's specialists: 2 luxuries an Entertainer, 3 science a Scientist.
-      new YieldRule(
-        'test:specialists',
-        new Effect((): Yield[] => [
-          new LuxuriesYield(entertainers * 2, 'Entertainer'),
-          new Research(scientists * 3, 'Scientist'),
-        ])
-      ),
-      new YieldModifier(
-        'test:library',
-        new Low(),
-        new Criterion(
-          (city: City, yields: Yield[], base: Yield[]): boolean =>
-            reduceYield(base, Research) > 0
-        ),
-        new Effect(
-          (city: City, yields: Yield[], base: Yield[]): Yield =>
-            new Research(reduceYield(base, Research) >> 1, 'Library')
-        )
+      new Effect(
+        (city: City, yields: Yield[], base: Yield[]): Yield =>
+          new Research(reduceYield(base, Research) >> 1, 'Library')
       )
-    );
+    )
+  );
 
-    const yields: Yield[] = [];
+  playerGovernment.set(new GovernmentType());
 
-    rules.get(YieldRule).forEach((rule: YieldRule): void => {
-      if (rule.validate(city, yields)) {
-        yields.push(...([] as Yield[]).concat(rule.process(city, yields)));
-      }
-    });
+  const rates = playerTradeRatesRegistry.getByPlayer(player);
 
-    const base = [...yields];
-
-    rules.get(YieldModifier).forEach((rule: YieldModifier): void => {
-      if (rule.validate(city, yields, base)) {
-        yields.push(
-          ...([] as Yield[]).concat(rule.process(city, yields, base) as Yield)
+  return {
+    playerGovernment,
+    rates,
+    setRates: ([luxuries, research, tax]: number[]): void =>
+      rates.setAll([
+        [LuxuriesRate, luxuries],
+        [ResearchRate, research],
+        [TaxRate, tax],
+      ]),
+    stored: (): number[] => rates.all().map((rate) => rate.value()),
+    yieldsOf: (
+      trade: number,
+      { entertainers = 0, scientists = 0 }: Specialists = {}
+    ) => {
+      specialistRegistry
+        .getByCity(city)
+        .forEach((specialist: Specialist) =>
+          specialistRegistry.unregister(specialist)
         );
+      for (let i = 0; i < entertainers; i++) {
+        specialistRegistry.register(new Entertainer(city));
       }
-    });
+      for (let i = 0; i < scientists; i++) {
+        specialistRegistry.register(new Scientist(city));
+      }
 
-    return yields;
-  },
-  totals = (yields: Yield[]) => ({
-    luxuries: reduceYield(yields, LuxuriesYield),
-    research: reduceYield(yields, Research),
-    tax: reduceYield(yields, GoldYield),
-  });
+      const yields: Yield[] = [new Trade(trade)];
+
+      ruleRegistry.get(YieldRule).forEach((rule: YieldRule): void => {
+        if (rule.validate(city, yields)) {
+          yields.push(...([] as Yield[]).concat(rule.process(city, yields)));
+        }
+      });
+
+      const base = [...yields];
+
+      ruleRegistry.get(YieldModifier).forEach((rule: YieldModifier): void => {
+        if (rule.validate(city, yields, base)) {
+          yields.push(
+            ...([] as Yield[]).concat(rule.process(city, yields, base) as Yield)
+          );
+        }
+      });
+
+      return {
+        luxuries: reduceYield(yields, LuxuriesYield),
+        research: reduceYield(yields, Research),
+        tax: reduceYield(yields, GoldYield),
+      };
+    },
+  };
+};
 
 describe('Fundamentalism', (): void => {
-  describe('the loss of science', (): void => {
-    // The split's science and the Scientists' (3 each), then 50% of it lost, rounded down, then the Library's half.
+  describe('in the split', (): void => {
+    // [luxuries, research, tax] rates, the trade, and `city_split_trade` (OpenCiv2 `src/auto/city.cpp`,
+    //  richardpenman/civ2@e39fe7b) worked out by hand in tenths: luxuries `(t × (10 − science − tax) + 4) / 10`, science
+    //  `(t × min(science, 5) + 4) / 10` up to what luxuries leave, tax the rest; then science less half, rounded down;
+    //  then the Library's half of that.
     (
       [
-        [5, 0, 3, 1],
-        [4, 0, 2, 1],
-        [1, 0, 1, 0],
-        [0, 1, 2, 1],
-        [5, 1, 4, 2],
-        [0, 0, 0, 0],
-      ] as [number, number, number, number][]
-    ).forEach(([research, scientists, kept, library]) =>
-      it(`keeps ${kept} of ${research} science and ${scientists} Scientist(s), and the Library adds ${library}`, (): void => {
-        const yields = yieldsOf(
-          setUp('person', Fundamentalism),
-          { luxuries: 0, research, tax: 0 },
-          { scientists }
-        );
+        [[0, 80, 20], 10, { luxuries: 0, research: 3 + 1, tax: 5 }],
+        [[30, 70, 0], 7, { luxuries: 2, research: 2 + 1, tax: 2 }],
+        [[0, 50, 50], 9, { luxuries: 0, research: 2 + 1, tax: 5 }],
+        [[0, 60, 40], 9, { luxuries: 0, research: 2 + 1, tax: 5 }],
+        [[0, 80, 20], 1, { luxuries: 0, research: 0, tax: 1 }],
+        [[50, 50, 0], 9, { luxuries: 4, research: 2 + 1, tax: 1 }],
+      ] as [number[], number, object][]
+    ).forEach(([rates, trade, expected]) =>
+      it(`splits ${trade} trade at ${rates.join('/')} into ${JSON.stringify(
+        expected
+      )}`, (): void => {
+        const { setRates, stored, yieldsOf } = setUp('person', Fundamentalism);
 
-        expect(
-          reduceYield(
-            yields.filter((cityYield) =>
-              cityYield.values().every(([, provider]) => provider !== 'Library')
-            ),
-            Research
-          )
-        ).to.equal(kept);
-        expect(totals(yields).research).to.equal(kept + library);
+        setRates(rates);
+
+        expect(stored()).to.deep.equal(rates);
+        expect(yieldsOf(trade)).to.deep.equal(expected);
       })
     );
 
-    it('takes nothing under any other government', (): void => {
-      expect(
-        totals(
-          yieldsOf(
-            setUp('person', Despotism),
-            { luxuries: 0, research: 5, tax: 0 },
-            { scientists: 1 }
-          )
-        )
-      ).to.deep.equal({ luxuries: 0, research: 12, tax: 0 });
-    });
-  });
+    it("loses half of a city's science, Scientists' included, before the Library", (): void => {
+      const { setRates, yieldsOf } = setUp('person', Fundamentalism);
 
-  describe("a computer player's luxuries", (): void => {
-    it("turns the split's luxuries into science before the loss, and leaves the Entertainers'", (): void => {
-      // 4 luxuries + 5 science + 3 from a Scientist = 12, less 6 = 6, and the Library's 3.
-      expect(
-        totals(
-          yieldsOf(
-            setUp('computer', Fundamentalism),
-            { luxuries: 4, research: 5, tax: 3 },
-            { entertainers: 1, scientists: 1 }
-          )
-        )
-      ).to.deep.equal({ luxuries: 2, research: 9, tax: 3 });
+      setRates([0, 50, 50]);
+
+      // 10 trade: 5 science and 5 tax; a Scientist's 3 makes 8; half lost, 4; the Library's 2.
+      expect(yieldsOf(10, { scientists: 1 })).to.deep.equal({
+        luxuries: 0,
+        research: 6,
+        tax: 5,
+      });
+
+      // 5 science and 3 + 3 makes 11; 5 lost (rounded down), 6; the Library's 3.
+      expect(yieldsOf(10, { scientists: 2 })).to.deep.equal({
+        luxuries: 0,
+        research: 9,
+        tax: 5,
+      });
+    });
+
+    it("turns a computer player's split luxuries into science before the loss, and leaves its Entertainers'", (): void => {
+      const { setRates, stored, yieldsOf } = setUp('computer', Fundamentalism);
+
+      // A computer player's research is limited to 70% under Fundamentalism by its maximum rate, and to 5 tenths in
+      //  the split.
+      setRates([20, 80, 0]);
+      expect(stored()).to.deep.equal([20, 70, 10]);
+
+      // 10 trade: 2 luxuries, 7 science limited to 5 (2 to tax: 3), luxuries to science (7), a Scientist's 3 (10),
+      //  half lost (5), the Library's 2; the Entertainer's 2 luxuries stay.
+      expect(yieldsOf(10, { entertainers: 1, scientists: 1 })).to.deep.equal({
+        luxuries: 2,
+        research: 7,
+        tax: 3,
+      });
     });
 
     it("leaves a person's luxuries as luxuries", (): void => {
-      // 5 + 3 = 8, less 4 = 4, and the Library's 2.
-      expect(
-        totals(
-          yieldsOf(
-            setUp('person', Fundamentalism),
-            { luxuries: 4, research: 5, tax: 3 },
-            { entertainers: 1, scientists: 1 }
-          )
-        )
-      ).to.deep.equal({ luxuries: 6, research: 6, tax: 3 });
-    });
+      const { setRates, yieldsOf } = setUp('person', Fundamentalism);
 
-    it('leaves them under any other government', (): void => {
-      expect(
-        totals(
-          yieldsOf(
-            setUp('computer', Despotism),
-            { luxuries: 4, research: 5, tax: 3 },
-            { entertainers: 1 }
-          )
-        )
-      ).to.deep.equal({ luxuries: 6, research: 7, tax: 3 });
+      setRates([20, 50, 30]);
+
+      // 10 trade: 2, 5 and 3; 2 more luxuries from an Entertainer; science 5 less 2 is 3, and the Library's 1.
+      expect(yieldsOf(10, { entertainers: 1 })).to.deep.equal({
+        luxuries: 4,
+        research: 4,
+        tax: 3,
+      });
     });
   });
 
   describe('the research rate', (): void => {
-    const ratesFor = (setup: ReturnType<typeof setUp>) => {
-      // civ2-trade-rate sends research's excess to tax first.
-      setup.ruleRegistry.register(
-        new ExcessRate('test:excess', new Effect(() => [TaxRate]))
+    it('keeps the research rate a person set, and uses all of it again after Fundamentalism', (): void => {
+      const { playerGovernment, setRates, stored, yieldsOf } = setUp(
+        'person',
+        Democracy
       );
 
-      return new PlayerTradeRates(
-        setup.player,
-        new LuxuriesRate(0),
-        new ResearchRate(0),
-        new TaxRate(100),
-        setup.ruleRegistry
-      );
-    };
+      setRates([0, 80, 20]);
+      playerGovernment.set(new Fundamentalism());
 
-    it('limits research to 50% under Fundamentalism, persons and computer players alike', (): void => {
-      (['person', 'computer'] as const).forEach((kind): void => {
-        const rates = ratesFor(setUp(kind, Fundamentalism));
+      expect(stored()).to.deep.equal([0, 80, 20]);
+      expect(yieldsOf(10)).to.deep.equal({ luxuries: 0, research: 4, tax: 5 });
 
-        expect(rates.maxRate(ResearchRate)).to.equal(0.5);
-        expect(rates.maxRate(TaxRate)).to.equal(undefined);
-        expect(rates.maxRate(LuxuriesRate)).to.equal(undefined);
+      playerGovernment.set(new Republic());
 
-        rates.setAll([
-          [LuxuriesRate, 0],
-          [ResearchRate, 80],
-          [TaxRate, 20],
-        ]);
-
-        expect(rates.all().map((rate) => rate.value())).to.deep.equal([
-          0, 50, 50,
-        ]);
-
-        rates.setAll([
-          [LuxuriesRate, 0],
-          [ResearchRate, 50],
-          [TaxRate, 50],
-        ]);
-
-        expect(rates.all().map((rate) => rate.value())).to.deep.equal([
-          0, 50, 50,
-        ]);
+      expect(stored()).to.deep.equal([0, 80, 20]);
+      expect(yieldsOf(10)).to.deep.equal({
+        luxuries: 0,
+        research: 8 + 4,
+        tax: 2,
       });
     });
 
-    it('sets no limit on research under any other government', (): void => {
-      expect(
-        ratesFor(setUp('person', Despotism)).maxRate(ResearchRate)
-      ).to.equal(undefined);
+    it('changes nothing under any other government', (): void => {
+      const { setRates, yieldsOf } = setUp('computer', Despotism);
+
+      setRates([20, 60, 20]);
+
+      // 10 trade: 2, 6 and 2; a Scientist's 3 makes 9, and the Library's 4.
+      expect(yieldsOf(10, { entertainers: 1, scientists: 1 })).to.deep.equal({
+        luxuries: 4,
+        research: 13,
+        tax: 2,
+      });
     });
   });
 });

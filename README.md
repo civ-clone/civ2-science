@@ -22,9 +22,8 @@ under `civ2-science:` ids, with Civ2's numbers from OpenCiv2's reconstruction of
 - **Capture:** taking a city takes one of its owner's advances (never a Future Technology), chosen by the captor's
   client.
 - **Fundamentalism** (`city_split_trade`):
-  - no more than half the trade goes to research (COSMIC's 5 tenths), persons and computer players alike: a `MaxRate`
-    on the research rate, so the excess goes to tax as civ2-trade-rate sends it. The original uses the lower rate only
-    in the split, and leaves the slider where it was;
+  - the split uses no more than COSMIC's 5 tenths for research, persons and computer players alike, and tax takes the
+    rest. The research rate itself is left as it is, so leaving Fundamentalism uses all of it again;
   - a computer player's cities turn the luxuries the split gave them into science, before the specialists' yields;
   - a city loses half its science (COSMIC's 50%, rounded down), Scientists' included, before the Library, University
     and Research Lab add their share.
