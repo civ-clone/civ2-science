@@ -26,7 +26,8 @@ export const register = (game: Game): void => {
       game.clients,
       game.playerResearch,
       game.turn,
-      game.playerWorlds
+      game.playerWorlds,
+      game.rules
     ),
     ...processYield(game.playerResearch, game.rules, game.playerGovernments)
   );

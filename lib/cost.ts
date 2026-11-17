@@ -147,14 +147,28 @@ export const FULL_RAMP = 1.75;
 export const fullRampStep = (n: number): number => rampedStep(n) / FULL_RAMP;
 
 /**
+ * `bulbs` times `multiplier`, to the nearest whole bulb, then `capped`: for a rule set that multiplies the research
+ *  cost (`Rules/Research/RateMultiplier`). A multiplier of 1, Civilization II's, leaves `bulbs` as they are, rounding
+ *  nothing.
+ */
+export const multipliedCost = (bulbs: number, multiplier: number = 1): number =>
+  capped(multiplier === 1 ? bulbs : Math.round(bulbs * multiplier));
+
+/**
  * The bulbs the next advance costs (OpenCiv2 `src/auto/civ.cpp` `civ_research_cost`, richardpenman/civ2@49f26ec), for a
  *  game that isn't a scenario: `n`, the advances gained (at least 1), times the ratio (`researchRate`), stopping at
- *  32000.
+ *  32000. `multiplier` is a rule set's (`multipliedCost`): 1, Civilization II's own, unless told otherwise.
  */
-export const researchCost = (inputs: ResearchCostInputs): number => {
+export const researchCost = (
+  inputs: ResearchCostInputs,
+  multiplier: number = 1
+): number => {
   const known = Math.max(inputs.advances, 0);
 
-  return capped(researchRate(inputs) * (known < 2 ? 1 : known));
+  return multipliedCost(
+    researchRate(inputs) * (known < 2 ? 1 : known),
+    multiplier
+  );
 };
 
 export default researchCost;
