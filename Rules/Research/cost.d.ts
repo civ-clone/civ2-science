@@ -6,6 +6,7 @@ import { Turn } from '@civ-clone/core-turn-based-game/Turn';
 import { MapSize } from '@civ-clone/civ2-rules/lib/mapSize';
 import Cost from '@civ-clone/core-science/Rules/Cost';
 import PlayerResearch from '@civ-clone/core-science/PlayerResearch';
+import { ResearchCostInputs } from '../../lib/cost';
 /** What `num_advances` is for a civilization knowing nothing: see `numberOfAdvances`. */
 export declare const STARTING_NUMBER_OF_ADVANCES = 1;
 /**
@@ -34,6 +35,25 @@ export declare const referenceAdvances: (
 export declare const mapSizeOf: (
   playerWorldRegistry: PlayerWorldRegistry
 ) => MapSize;
+/** What the research cost is read from: the game's difficulty, its players' clients and research, the turn and the map. */
+export interface CostContext {
+  gameDifficultyRegistry: GameDifficultyRegistry;
+  clientRegistry: ClientRegistry;
+  playerResearchRegistry: PlayerResearchRegistry;
+  turn: Turn;
+  playerWorldRegistry: PlayerWorldRegistry;
+}
+/** `lib/cost`'s inputs for `playerResearch` now. */
+export declare const costInputs: (
+  {
+    gameDifficultyRegistry,
+    clientRegistry,
+    playerResearchRegistry,
+    turn,
+    playerWorldRegistry,
+  }: CostContext,
+  playerResearch: PlayerResearch
+) => ResearchCostInputs;
 export declare const getRules: (
   gameDifficultyRegistry?: GameDifficultyRegistry,
   clientRegistry?: ClientRegistry,

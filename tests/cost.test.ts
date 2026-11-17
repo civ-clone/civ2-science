@@ -1,4 +1,10 @@
-import researchCost, { ResearchCostInputs } from '../lib/cost';
+import researchCost, {
+  FULL_RAMP,
+  ResearchCostInputs,
+  fullRampStep,
+  rampedStep,
+  researchRate,
+} from '../lib/cost';
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
 
@@ -75,5 +81,77 @@ describe('researchCost', (): void => {
   it('applies a tech paradigm other than 10', (): void => {
     // 12 × 15 / 10 = 18, extra 0, × 67 / 89 = 13; × 1.
     expect(cost({ techParadigm: 15 })).equal(13);
+  });
+});
+
+// The ratio on its own, for a cost fixed per advance (civ-clone/web-renderer#1072).
+const inputs = (values: Partial<ResearchCostInputs>): ResearchCostInputs => ({
+  advances: 0,
+  reference: 0,
+  level: 3,
+  human: true,
+  turn: 1,
+  techParadigm: 10,
+  enabledAdvances: 89,
+  mapSize: 'normal',
+  ...values,
+});
+
+describe('researchRate', (): void => {
+  it('times the advances gained, is the cost', (): void => {
+    [
+      {},
+      { human: false, advances: 10, reference: 12, turn: 50 },
+      {
+        advances: 30,
+        reference: 20,
+        turn: 200,
+        level: 5,
+        mapSize: 'large' as const,
+      },
+      { techParadigm: 15 },
+    ].forEach((values) => {
+      const known = Math.max(values.advances ?? 0, 1);
+
+      expect(
+        researchRate(inputs(values)) * known,
+        JSON.stringify(values)
+      ).equal(cost(values));
+    });
+  });
+
+  it('leaves out the ramp and the floor when told to', (): void => {
+    // A person at King knowing 10, level with the reference: 12, extra 9 × 10 / 20 = 4, 16 × 67 / 89 = 12.
+    expect(researchRate(inputs({ advances: 10, reference: 10 }))).equal(12);
+    // Without the ramp: 12 × 67 / 89 = 9.
+    expect(
+      researchRate(inputs({ advances: 10, reference: 10 }), { ramp: false })
+    ).equal(9);
+    // The first advance: 9, raised to 10 by the floor; without it, 9.
+    expect(researchRate(inputs({}), { ramp: false })).equal(10);
+    expect(researchRate(inputs({}), { ramp: false, floor: false })).equal(9);
+  });
+
+  it('ramps the n-th step by three quarters over the first twenty', (): void => {
+    expect([1, 10, 20, 40].map(rampedStep)).eql([1.0375, 13.75, 35, 70]);
+  });
+
+  it('takes the whole ramp whatever the advances gained, when told to, as from the twentieth on', (): void => {
+    // Knowing 10: 12 + 9 = 21, × 67 / 89 = 15, as with 20 or more known.
+    expect(
+      researchRate(inputs({ advances: 10, reference: 10 }), { ramp: 'full' })
+    ).equal(15);
+    expect(
+      researchRate(inputs({ advances: 25, reference: 25, turn: 200 }), {
+        ramp: 'full',
+      })
+    ).equal(researchRate(inputs({ advances: 25, reference: 25, turn: 200 })));
+  });
+
+  it('steps by n over the whole ramp from the twentieth on, and a little less before it', (): void => {
+    expect(FULL_RAMP).equal(1.75);
+    expect(fullRampStep(20)).equal(20);
+    expect(fullRampStep(40)).equal(40);
+    expect(fullRampStep(10)).closeTo(10 * (1.375 / 1.75), 1e-9);
   });
 });

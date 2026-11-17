@@ -28,7 +28,8 @@ import cosmic from '@civ-clone/civ2-rules/data/cosmic';
 import { enabledAdvances } from '../../lib/advanceIndex';
 import isHuman from '@civ-clone/base-difficulty/lib/isHuman';
 import { levelOf } from '@civ-clone/civ2-difficulty/level';
-import researchCost from '../../lib/cost';
+import researchCost, { ResearchCostInputs } from '../../lib/cost';
+import { COST_RULE } from '../../RuleIds';
 
 /** What `num_advances` is for a civilization knowing nothing: see `numberOfAdvances`. */
 export const STARTING_NUMBER_OF_ADVANCES = 1;
@@ -77,6 +78,36 @@ export const mapSizeOf = (
     : 'normal';
 };
 
+/** What the research cost is read from: the game's difficulty, its players' clients and research, the turn and the map. */
+export interface CostContext {
+  gameDifficultyRegistry: GameDifficultyRegistry;
+  clientRegistry: ClientRegistry;
+  playerResearchRegistry: PlayerResearchRegistry;
+  turn: Turn;
+  playerWorldRegistry: PlayerWorldRegistry;
+}
+
+/** `lib/cost`'s inputs for `playerResearch` now. */
+export const costInputs = (
+  {
+    gameDifficultyRegistry,
+    clientRegistry,
+    playerResearchRegistry,
+    turn,
+    playerWorldRegistry,
+  }: CostContext,
+  playerResearch: PlayerResearch
+): ResearchCostInputs => ({
+  advances: numberOfAdvances(playerResearch),
+  reference: referenceAdvances(playerResearchRegistry, clientRegistry),
+  level: levelOf(gameDifficultyRegistry),
+  human: isHuman(playerResearch.player(), clientRegistry),
+  turn: turn.value(),
+  techParadigm: cosmic.techParadigm,
+  enabledAdvances,
+  mapSize: mapSizeOf(playerWorldRegistry),
+});
+
 // Civilization II's research cost (`lib/cost`): the same for every advance, from the player's advances, the level,
 //  whether a person plays it, the reference player's advances, the turn and the map's size.
 export const getRules: (
@@ -93,19 +124,21 @@ export const getRules: (
   playerWorldRegistry: PlayerWorldRegistry = playerWorldRegistryInstance
 ): Cost[] => [
   new Cost(
-    'civ2-science:research/cost',
+    COST_RULE,
     new Effect(
       (CostAdvance: typeof Advance, playerResearch: PlayerResearch): number =>
-        researchCost({
-          advances: numberOfAdvances(playerResearch),
-          reference: referenceAdvances(playerResearchRegistry, clientRegistry),
-          level: levelOf(gameDifficultyRegistry),
-          human: isHuman(playerResearch.player(), clientRegistry),
-          turn: turn.value(),
-          techParadigm: cosmic.techParadigm,
-          enabledAdvances,
-          mapSize: mapSizeOf(playerWorldRegistry),
-        })
+        researchCost(
+          costInputs(
+            {
+              gameDifficultyRegistry,
+              clientRegistry,
+              playerResearchRegistry,
+              turn,
+              playerWorldRegistry,
+            },
+            playerResearch
+          )
+        )
     )
   ),
 ];
