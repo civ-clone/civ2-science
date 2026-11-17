@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRules = exports.mapSizeOf = exports.referenceAdvances = exports.numberOfAdvances = exports.STARTING_NUMBER_OF_ADVANCES = void 0;
+exports.getRules = exports.costInputs = exports.mapSizeOf = exports.referenceAdvances = exports.numberOfAdvances = exports.STARTING_NUMBER_OF_ADVANCES = void 0;
 const ClientRegistry_1 = require("@civ-clone/core-client/ClientRegistry");
 const GameDifficultyRegistry_1 = require("@civ-clone/core-difficulty/GameDifficultyRegistry");
 const PlayerResearchRegistry_1 = require("@civ-clone/core-science/PlayerResearchRegistry");
@@ -14,6 +14,7 @@ const advanceIndex_1 = require("../../lib/advanceIndex");
 const isHuman_1 = require("@civ-clone/base-difficulty/lib/isHuman");
 const level_1 = require("@civ-clone/civ2-difficulty/level");
 const cost_1 = require("../../lib/cost");
+const RuleIds_1 = require("../../RuleIds");
 /** What `num_advances` is for a civilization knowing nothing: see `numberOfAdvances`. */
 exports.STARTING_NUMBER_OF_ADVANCES = 1;
 /**
@@ -46,19 +47,28 @@ const mapSizeOf = (playerWorldRegistry) => {
         : 'normal';
 };
 exports.mapSizeOf = mapSizeOf;
+/** `lib/cost`'s inputs for `playerResearch` now. */
+const costInputs = ({ gameDifficultyRegistry, clientRegistry, playerResearchRegistry, turn, playerWorldRegistry, }, playerResearch) => ({
+    advances: (0, exports.numberOfAdvances)(playerResearch),
+    reference: (0, exports.referenceAdvances)(playerResearchRegistry, clientRegistry),
+    level: (0, level_1.levelOf)(gameDifficultyRegistry),
+    human: (0, isHuman_1.default)(playerResearch.player(), clientRegistry),
+    turn: turn.value(),
+    techParadigm: cosmic_1.default.techParadigm,
+    enabledAdvances: advanceIndex_1.enabledAdvances,
+    mapSize: (0, exports.mapSizeOf)(playerWorldRegistry),
+});
+exports.costInputs = costInputs;
 // Civilization II's research cost (`lib/cost`): the same for every advance, from the player's advances, the level,
 //  whether a person plays it, the reference player's advances, the turn and the map's size.
 const getRules = (gameDifficultyRegistry = GameDifficultyRegistry_1.instance, clientRegistry = ClientRegistry_1.instance, playerResearchRegistry = PlayerResearchRegistry_1.instance, turn = Turn_1.instance, playerWorldRegistry = PlayerWorldRegistry_1.instance) => [
-    new Cost_1.default('civ2-science:research/cost', new Effect_1.default((CostAdvance, playerResearch) => (0, cost_1.default)({
-        advances: (0, exports.numberOfAdvances)(playerResearch),
-        reference: (0, exports.referenceAdvances)(playerResearchRegistry, clientRegistry),
-        level: (0, level_1.levelOf)(gameDifficultyRegistry),
-        human: (0, isHuman_1.default)(playerResearch.player(), clientRegistry),
-        turn: turn.value(),
-        techParadigm: cosmic_1.default.techParadigm,
-        enabledAdvances: advanceIndex_1.enabledAdvances,
-        mapSize: (0, exports.mapSizeOf)(playerWorldRegistry),
-    }))),
+    new Cost_1.default(RuleIds_1.COST_RULE, new Effect_1.default((CostAdvance, playerResearch) => (0, cost_1.default)((0, exports.costInputs)({
+        gameDifficultyRegistry,
+        clientRegistry,
+        playerResearchRegistry,
+        turn,
+        playerWorldRegistry,
+    }, playerResearch)))),
 ];
 exports.getRules = getRules;
 exports.default = exports.getRules;

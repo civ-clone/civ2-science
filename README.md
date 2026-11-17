@@ -17,7 +17,10 @@ under `civ2-science:` ids, with Civ2's numbers from OpenCiv2's reconstruction of
   advances counted, a multiple of 3), except the lowest and except on Chieftain. Computer players see every one.
   `lib/pickResearch` is the game's own pick (`civ_pick_research_advance`).
 - **Cost:** `lib/cost`, Civ2's `civ_research_cost`, worked out again at each turn's start. Completing research
-  carries nothing over: progress goes back to 0.
+  carries nothing over: progress goes back to 0. `researchRate` is its ratio without the advances gained, with the
+  ramp and a person's floor optional, and `rampedStep` the n-th advance's cost in steps of the ratio without the ramp,
+  for `civ2-enhanced`'s cost fixed per advance (civ-clone/web-renderer#1072). The rule's id is `RuleIds.COST_RULE`;
+  `Rules/Research/cost`'s `costInputs` gives `lib/cost`'s inputs for a player.
 - **Research:** a city's research goes to its player, but not under Anarchy or in disorder.
 - **Capture:** taking a city takes one of its owner's advances (never a Future Technology), chosen by the captor's
   client.
