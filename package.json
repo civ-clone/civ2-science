@@ -1,6 +1,6 @@
 {
   "name": "@civ-clone/civ2-science",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Civilization II's 90 advances, their prerequisites, the research cost and the hidden choice of research, on base-science-research.",
   "main": "index.js",
   "repository": "git@github.com:civ-clone/civ2-science.git",
