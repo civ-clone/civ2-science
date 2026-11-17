@@ -4,6 +4,7 @@ import { PlayerResearchRegistry } from '@civ-clone/core-science/PlayerResearchRe
 import { PlayerWorldRegistry } from '@civ-clone/core-player-world/PlayerWorldRegistry';
 import { Turn } from '@civ-clone/core-turn-based-game/Turn';
 import { MapSize } from '@civ-clone/civ2-rules/lib/mapSize';
+import { RuleRegistry } from '@civ-clone/core-rule/RuleRegistry';
 import Cost from '@civ-clone/core-science/Rules/Cost';
 import PlayerResearch from '@civ-clone/core-science/PlayerResearch';
 import { ResearchCostInputs } from '../../lib/cost';
@@ -42,7 +43,20 @@ export interface CostContext {
   playerResearchRegistry: PlayerResearchRegistry;
   turn: Turn;
   playerWorldRegistry: PlayerWorldRegistry;
+  /**
+   * The game's rules, for its `RateMultiplier` rules (civ-clone/web-renderer#1077). Without them, or with none in
+   * force, the cost is Civilization II's own.
+   */
+  ruleRegistry?: RuleRegistry;
 }
+/**
+ * What `playerResearch`'s research cost is multiplied by now: by the game's `RateMultiplier` rules, or 1, Civilization
+ * II's own, with none in force or no rules to ask.
+ */
+export declare const rateMultiplier: (
+  { ruleRegistry }: Pick<CostContext, 'ruleRegistry'>,
+  playerResearch: PlayerResearch
+) => number;
 /** `lib/cost`'s inputs for `playerResearch` now. */
 export declare const costInputs: (
   {
@@ -59,6 +73,7 @@ export declare const getRules: (
   clientRegistry?: ClientRegistry,
   playerResearchRegistry?: PlayerResearchRegistry,
   turn?: Turn,
-  playerWorldRegistry?: PlayerWorldRegistry
+  playerWorldRegistry?: PlayerWorldRegistry,
+  ruleRegistry?: RuleRegistry
 ) => Cost[];
 export default getRules;

@@ -22,6 +22,11 @@ under `civ2-science:` ids, with Civ2's numbers from OpenCiv2's reconstruction of
   cost in steps of the ratio with the whole ramp (`rampedStep` over 1.75), for `civ2-enhanced`'s cost fixed per
   advance (civ-clone/web-renderer#1072). The rule's id is `RuleIds.COST_RULE`;
   `Rules/Research/cost`'s `costInputs` gives `lib/cost`'s inputs for a player.
+- **Cost multiplier:** `Rules/Research/RateMultiplier` multiplies a player's cost, rounded to a whole bulb before it
+  stops at 32000 (`lib/cost`'s `multipliedCost`), for a rule set such as `civ2-enhanced`'s cost by age
+  (civ-clone/web-renderer#1077). Civilization II has no such factor, so this package registers none, and with none in
+  force the cost is Civilization II's own, unrounded and unchanged. `Rules/Research/cost`'s `rateMultiplier` asks the
+  game's rules for it.
 - **Research:** a city's research goes to its player, but not under Anarchy or in disorder.
 - **Capture:** taking a city takes one of its owner's advances (never a Future Technology), chosen by the captor's
   client.

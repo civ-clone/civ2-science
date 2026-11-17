@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRules = exports.costInputs = exports.mapSizeOf = exports.referenceAdvances = exports.numberOfAdvances = exports.STARTING_NUMBER_OF_ADVANCES = void 0;
+exports.getRules = exports.costInputs = exports.rateMultiplier = exports.mapSizeOf = exports.referenceAdvances = exports.numberOfAdvances = exports.STARTING_NUMBER_OF_ADVANCES = void 0;
 const ClientRegistry_1 = require("@civ-clone/core-client/ClientRegistry");
 const GameDifficultyRegistry_1 = require("@civ-clone/core-difficulty/GameDifficultyRegistry");
 const PlayerResearchRegistry_1 = require("@civ-clone/core-science/PlayerResearchRegistry");
@@ -9,6 +9,7 @@ const Turn_1 = require("@civ-clone/core-turn-based-game/Turn");
 const mapSize_1 = require("@civ-clone/civ2-rules/lib/mapSize");
 const Cost_1 = require("@civ-clone/core-science/Rules/Cost");
 const Effect_1 = require("@civ-clone/core-rule/Effect");
+const RateMultiplier_1 = require("./RateMultiplier");
 const cosmic_1 = require("@civ-clone/civ2-rules/data/cosmic");
 const advanceIndex_1 = require("../../lib/advanceIndex");
 const isHuman_1 = require("@civ-clone/base-difficulty/lib/isHuman");
@@ -47,6 +48,18 @@ const mapSizeOf = (playerWorldRegistry) => {
         : 'normal';
 };
 exports.mapSizeOf = mapSizeOf;
+/**
+ * What `playerResearch`'s research cost is multiplied by now: by the game's `RateMultiplier` rules, or 1, Civilization
+ * II's own, with none in force or no rules to ask.
+ */
+const rateMultiplier = ({ ruleRegistry }, playerResearch) => {
+    if (ruleRegistry === undefined) {
+        return 1;
+    }
+    const [multiplier] = ruleRegistry.process(RateMultiplier_1.default, playerResearch);
+    return multiplier !== null && multiplier !== void 0 ? multiplier : 1;
+};
+exports.rateMultiplier = rateMultiplier;
 /** `lib/cost`'s inputs for `playerResearch` now. */
 const costInputs = ({ gameDifficultyRegistry, clientRegistry, playerResearchRegistry, turn, playerWorldRegistry, }, playerResearch) => ({
     advances: (0, exports.numberOfAdvances)(playerResearch),
@@ -60,16 +73,23 @@ const costInputs = ({ gameDifficultyRegistry, clientRegistry, playerResearchRegi
 });
 exports.costInputs = costInputs;
 // Civilization II's research cost (`lib/cost`): the same for every advance, from the player's advances, the level,
-//  whether a person plays it, the reference player's advances, the turn and the map's size.
-const getRules = (gameDifficultyRegistry = GameDifficultyRegistry_1.instance, clientRegistry = ClientRegistry_1.instance, playerResearchRegistry = PlayerResearchRegistry_1.instance, turn = Turn_1.instance, playerWorldRegistry = PlayerWorldRegistry_1.instance) => [
-    new Cost_1.default(RuleIds_1.COST_RULE, new Effect_1.default((CostAdvance, playerResearch) => (0, cost_1.default)((0, exports.costInputs)({
+//  whether a person plays it, the reference player's advances, the turn and the map's size. Times what the game's
+//  `RateMultiplier` rules say, when given its rules: Civilization II has none, so 1 unless a rule set adds one.
+const getRules = (gameDifficultyRegistry = GameDifficultyRegistry_1.instance, clientRegistry = ClientRegistry_1.instance, playerResearchRegistry = PlayerResearchRegistry_1.instance, turn = Turn_1.instance, playerWorldRegistry = PlayerWorldRegistry_1.instance, 
+// The rules the cost asks for its multiplier. Left out, the cost is Civilization II's whatever rules there are.
+ruleRegistry) => {
+    const context = {
         gameDifficultyRegistry,
         clientRegistry,
         playerResearchRegistry,
         turn,
         playerWorldRegistry,
-    }, playerResearch)))),
-];
+        ruleRegistry,
+    };
+    return [
+        new Cost_1.default(RuleIds_1.COST_RULE, new Effect_1.default((CostAdvance, playerResearch) => (0, cost_1.default)((0, exports.costInputs)(context, playerResearch), (0, exports.rateMultiplier)(context, playerResearch)))),
+    ];
+};
 exports.getRules = getRules;
 exports.default = exports.getRules;
 //# sourceMappingURL=cost.js.map
