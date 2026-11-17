@@ -1,5 +1,7 @@
 import researchCost, {
+  FULL_RAMP,
   ResearchCostInputs,
+  fullRampStep,
   rampedStep,
   researchRate,
 } from '../lib/cost';
@@ -132,5 +134,24 @@ describe('researchRate', (): void => {
 
   it('ramps the n-th step by three quarters over the first twenty', (): void => {
     expect([1, 10, 20, 40].map(rampedStep)).eql([1.0375, 13.75, 35, 70]);
+  });
+
+  it('takes the whole ramp whatever the advances gained, when told to, as from the twentieth on', (): void => {
+    // Knowing 10: 12 + 9 = 21, × 67 / 89 = 15, as with 20 or more known.
+    expect(
+      researchRate(inputs({ advances: 10, reference: 10 }), { ramp: 'full' })
+    ).equal(15);
+    expect(
+      researchRate(inputs({ advances: 25, reference: 25, turn: 200 }), {
+        ramp: 'full',
+      })
+    ).equal(researchRate(inputs({ advances: 25, reference: 25, turn: 200 })));
+  });
+
+  it('steps by n over the whole ramp from the twentieth on, and a little less before it', (): void => {
+    expect(FULL_RAMP).equal(1.75);
+    expect(fullRampStep(20)).equal(20);
+    expect(fullRampStep(40)).equal(40);
+    expect(fullRampStep(10)).closeTo(10 * (1.375 / 1.75), 1e-9);
   });
 });

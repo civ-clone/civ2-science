@@ -23,10 +23,12 @@ export declare const capped: (cost: number) => number;
 /** Which of the rate's parts that follow the advances known `researchRate` leaves in. */
 export interface ResearchRateOptions {
   /**
-   * The three quarters more, scaled down while `n` is under 20. A cost fixed per advance (civ-clone/web-renderer#1072)
-   * leaves it out, its weights already ramping by `rampedStep`.
+   * The three quarters more: scaled down while `n` is under 20 (`true`, Civilization II's), whole whatever `n` is
+   * (`'full'`, as from the twentieth on), or left out (`false`). A cost fixed per advance (civ-clone/web-renderer#1072)
+   * takes it whole, as the rounding then falls as Civilization II's does, and its weights carry the rest of the ramp
+   * (`fullRampStep`).
    */
-  ramp?: boolean;
+  ramp?: boolean | 'full';
   /** For a person, never below 11 − n. A cost fixed per advance leaves it out, as Civilization's does. */
   floor?: boolean;
 }
@@ -62,6 +64,14 @@ export declare const researchRate: (
  *  `researchRate`'s ramp has it (unrounded). For the weights of a cost fixed per advance (civ-clone/web-renderer#1072).
  */
 export declare const rampedStep: (n: number) => number;
+/** The whole ramp: three quarters more. */
+export declare const FULL_RAMP = 1.75;
+/**
+ * What the n-th advance costs in steps of the ratio with the whole ramp (`researchRate`'s `ramp: 'full'`): `rampedStep`
+ *  over the whole ramp, so n from the twentieth on and a little less before it. For the weights of a cost fixed per
+ *  advance (civ-clone/web-renderer#1072).
+ */
+export declare const fullRampStep: (n: number) => number;
 /**
  * The bulbs the next advance costs (OpenCiv2 `src/auto/civ.cpp` `civ_research_cost`, richardpenman/civ2@49f26ec), for a
  *  game that isn't a scenario: `n`, the advances gained (at least 1), times the ratio (`researchRate`), stopping at
