@@ -29,13 +29,16 @@ export interface ResearchRateOptions {
    * (`fullRampStep`).
    */
   ramp?: boolean | 'full';
-  /** For a person, never below 11 − n. A cost fixed per advance leaves it out, as Civilization's does. */
+  /**
+   * For a person, never below 11 − n. A cost fixed per advance leaves it out, as `civ1-enhanced`'s leaves out
+   * Civilization's.
+   */
   floor?: boolean;
 }
 /**
- * The ratio each advance known is multiplied by: everything in `researchCost` but the advances known themselves (OpenCiv2
- *  `src/auto/civ.cpp` `civ_research_cost`, richardpenman/civ2@49f26ec). C's integer division rounds towards zero, hence
- *  `Math.trunc`.
+ * The ratio each advance known is multiplied by: everything in `researchCost` but the advances known themselves
+ *  (OpenCiv2 `src/auto/civ.cpp` `civ_research_cost`, richardpenman/civ2@49f26ec). C's integer division rounds towards
+ *  zero, hence `Math.trunc`.
  *
  * - The ratio starts at 6 + 2 × level for a person (levels above Emperor count as Emperor) and 14 − level for the
  *   computer.
