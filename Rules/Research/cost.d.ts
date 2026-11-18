@@ -21,12 +21,14 @@ export declare const numberOfAdvances: (
   playerResearch: PlayerResearch
 ) => number;
 /**
- * The reference count the research cost compares with: the most advances any person's player has, 0 with no person
- * playing (an all-computer game).
+ * The reference count the research cost compares with: the most advances any person's player has, or, with no person
+ * playing (an all-computer game, such as one only watched), the most any player has, barbarians left out.
  *
  * Civilization II reads `civs[game.best_human_rank]`, the civilization in the slot numbered by the best-placed human's
  * power rank (OpenCiv2's `civ2types.h` notes the rank-as-civilization mix-up). This engine has no fixed civilization
- * slots, so that can't be followed; this is the M2 survey's Q25 reading, the leading human.
+ * slots, so that can't be followed; this is the M2 survey's Q25 reading, the leading human. The original always has a
+ * person; with none, the leading player stands in, so that research is priced as if a person kept pace with it rather
+ * than against a person knowing nothing, which made every computer player a whole count ahead.
  */
 export declare const referenceAdvances: (
   playerResearchRegistry: PlayerResearchRegistry,

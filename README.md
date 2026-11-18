@@ -41,7 +41,10 @@ under `civ2-science:` ids, with Civ2's numbers from OpenCiv2's reconstruction of
 
 - **The cost's reference player.** Civ2 compares with `civs[best_human_rank]`, the civilization in the slot numbered by
   the leading human's power rank. There are no fixed civilization slots here, so this uses the person with the most
-  advances (the M2 survey's Q25), and 0 with no person playing.
+  advances (the M2 survey's Q25). With no person playing (an all-computer game, or one only watched, whose observer
+  has no seat), the original has no answer, as it always has a person: here the player with the most advances stands
+  in, barbarians left out (`referenceAdvances`). Against a reference of 0 every computer player was a whole count
+  ahead, and paid 1.5 to 2.3 times as much for each advance from 20 advances on at King.
 - **Advances given before the first turn** (the start balancing's) count towards the advances gained. Civ2 doesn't
   count them in `num_advances`, which the cost and the hidden choice use.
 - **Disorder:** OpenCiv2 shows no zeroing of a disordered city's science (survey Q33). This keeps Civilization's rule.

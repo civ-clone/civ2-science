@@ -12,6 +12,7 @@ const Effect_1 = require("@civ-clone/core-rule/Effect");
 const RateMultiplier_1 = require("./RateMultiplier");
 const cosmic_1 = require("@civ-clone/civ2-rules/data/cosmic");
 const advanceIndex_1 = require("../../lib/advanceIndex");
+const isBarbarian_1 = require("@civ-clone/base-civilization-barbarian/isBarbarian");
 const isHuman_1 = require("@civ-clone/base-difficulty/lib/isHuman");
 const level_1 = require("@civ-clone/civ2-difficulty/level");
 const cost_1 = require("../../lib/cost");
@@ -28,17 +29,21 @@ exports.STARTING_NUMBER_OF_ADVANCES = 1;
 const numberOfAdvances = (playerResearch) => playerResearch.complete().length + exports.STARTING_NUMBER_OF_ADVANCES;
 exports.numberOfAdvances = numberOfAdvances;
 /**
- * The reference count the research cost compares with: the most advances any person's player has, 0 with no person
- * playing (an all-computer game).
+ * The reference count the research cost compares with: the most advances any person's player has, or, with no person
+ * playing (an all-computer game, such as one only watched), the most any player has, barbarians left out.
  *
  * Civilization II reads `civs[game.best_human_rank]`, the civilization in the slot numbered by the best-placed human's
  * power rank (OpenCiv2's `civ2types.h` notes the rank-as-civilization mix-up). This engine has no fixed civilization
- * slots, so that can't be followed; this is the M2 survey's Q25 reading, the leading human.
+ * slots, so that can't be followed; this is the M2 survey's Q25 reading, the leading human. The original always has a
+ * person; with none, the leading player stands in, so that research is priced as if a person kept pace with it rather
+ * than against a person knowing nothing, which made every computer player a whole count ahead.
  */
-const referenceAdvances = (playerResearchRegistry, clientRegistry) => playerResearchRegistry
-    .entries()
-    .filter((playerResearch) => (0, isHuman_1.default)(playerResearch.player(), clientRegistry))
-    .reduce((most, playerResearch) => Math.max(most, (0, exports.numberOfAdvances)(playerResearch)), 0);
+const referenceAdvances = (playerResearchRegistry, clientRegistry) => {
+    const players = playerResearchRegistry
+        .entries()
+        .filter((playerResearch) => !(0, isBarbarian_1.default)(playerResearch.player())), people = players.filter((playerResearch) => (0, isHuman_1.default)(playerResearch.player(), clientRegistry));
+    return (people.length > 0 ? people : players).reduce((most, playerResearch) => Math.max(most, (0, exports.numberOfAdvances)(playerResearch)), 0);
+};
 exports.referenceAdvances = referenceAdvances;
 /** The size class of the game's map, from the squares every player sees: `normal` before there's a world. */
 const mapSizeOf = (playerWorldRegistry) => {
