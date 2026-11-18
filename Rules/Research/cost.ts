@@ -28,6 +28,7 @@ import PlayerWorld from '@civ-clone/core-player-world/PlayerWorld';
 import RateMultiplier from './RateMultiplier';
 import cosmic from '@civ-clone/civ2-rules/data/cosmic';
 import { enabledAdvances } from '../../lib/advanceIndex';
+import isBarbarian from '@civ-clone/base-civilization-barbarian/isBarbarian';
 import isHuman from '@civ-clone/base-difficulty/lib/isHuman';
 import { levelOf } from '@civ-clone/civ2-difficulty/level';
 import researchCost, { ResearchCostInputs } from '../../lib/cost';
@@ -47,27 +48,35 @@ export const numberOfAdvances = (playerResearch: PlayerResearch): number =>
   playerResearch.complete().length + STARTING_NUMBER_OF_ADVANCES;
 
 /**
- * The reference count the research cost compares with: the most advances any person's player has, 0 with no person
- * playing (an all-computer game).
+ * The reference count the research cost compares with: the most advances any person's player has, or, with no person
+ * playing (an all-computer game, such as one only watched), the most any player has, barbarians left out.
  *
  * Civilization II reads `civs[game.best_human_rank]`, the civilization in the slot numbered by the best-placed human's
  * power rank (OpenCiv2's `civ2types.h` notes the rank-as-civilization mix-up). This engine has no fixed civilization
- * slots, so that can't be followed; this is the M2 survey's Q25 reading, the leading human.
+ * slots, so that can't be followed; this is the M2 survey's Q25 reading, the leading human. The original always has a
+ * person; with none, the leading player stands in, so that research is priced as if a person kept pace with it rather
+ * than against a person knowing nothing, which made every computer player a whole count ahead.
  */
 export const referenceAdvances = (
   playerResearchRegistry: PlayerResearchRegistry,
   clientRegistry: ClientRegistry
-): number =>
-  playerResearchRegistry
-    .entries()
-    .filter((playerResearch: PlayerResearch): boolean =>
+): number => {
+  const players = playerResearchRegistry
+      .entries()
+      .filter(
+        (playerResearch: PlayerResearch): boolean =>
+          !isBarbarian(playerResearch.player())
+      ),
+    people = players.filter((playerResearch: PlayerResearch): boolean =>
       isHuman(playerResearch.player(), clientRegistry)
-    )
-    .reduce(
-      (most: number, playerResearch: PlayerResearch): number =>
-        Math.max(most, numberOfAdvances(playerResearch)),
-      0
     );
+
+  return (people.length > 0 ? people : players).reduce(
+    (most: number, playerResearch: PlayerResearch): number =>
+      Math.max(most, numberOfAdvances(playerResearch)),
+    0
+  );
+};
 
 /** The size class of the game's map, from the squares every player sees: `normal` before there's a world. */
 export const mapSizeOf = (
